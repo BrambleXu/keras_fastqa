@@ -159,7 +159,7 @@ class SquadConverter:
         question_batch = self._process_text(questions, self._question_max_len)
         start_batch = np.array(starts, dtype=np.int32)
         end_batch = np.array(ends, dtype=np.int32)
-        return [question_batch, context_batch], [start_batch, end_batch]
+        return [question_batch, context_batch, start_batch], [start_batch, end_batch]
 
     def _process_text(self, texts, max_length):
         texts = [[self._lower(token.text) for token in text] for text in texts]

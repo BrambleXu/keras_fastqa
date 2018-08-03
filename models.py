@@ -22,6 +22,7 @@ class FastQA:
     def build(self):
         question_input = Input((None,))
         context_input = Input((None,))
+        start_input = Input((None,))
 
         Q = self.embed_layer(question_input)
         X = self.embed_layer(context_input)
@@ -44,4 +45,4 @@ class FastQA:
         start = self.start_fc(self.answer_start_fc(Concatenate()([H, Z, H * Z])))
         end = self.end_fc(self.answer_end_fc(Concatenate()([H, Z, H * Z])))
 
-        return Model(inputs=[question_input, context_input], outputs=[start, end])
+        return Model(inputs=[question_input, context_input, start_input], outputs=[start, end])
