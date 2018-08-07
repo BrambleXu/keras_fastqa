@@ -41,12 +41,16 @@ class WeightedSum(Layer):
         return (batch, d)
 
 
-class WordInQuestionB(Layer):
-    def call(self, inputs):
-        question, context = inputs
-        question = tf.expand_dims(question, axis=1)
-        context = tf.expand_dims(context, axis=2)
-        return tf.expand_dims(tf.cast(tf.reduce_any(tf.equal(context, question), axis=2), tf.float32), axis=-1)
+class WordInQuestionB(Lambda):
+    def __init__(self, **kwargs):
+        def func(inputs):
+            question, context = inputs
+            question = tf.expand_dims(question, axis=1)
+            context = tf.expand_dims(context, axis=2)
+            return tf.expand_dims(tf.to_float(
+                tf.reduce_any(tf.equal(context, question), axis=2)), axis=-1)
+
+        super().__init__(function=func, **kwargs)
 
     def compute_output_shape(self, input_shape):
         batch, seq_len = input_shape[1]
