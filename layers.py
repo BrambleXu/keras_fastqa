@@ -121,3 +121,14 @@ class IndexSelect(Lambda):
     def compute_output_shape(self, input_shape):
         batch, _, d = input_shape[0]
         return (batch, d)
+
+
+class Argmax(Lambda):
+    def __init__(self, **kwargs):
+        def func(x):
+            return tf.expand_dims(tf.argmax(x, axis=-1), axis=-1)
+
+        super().__init__(function=func, **kwargs)
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], 1)

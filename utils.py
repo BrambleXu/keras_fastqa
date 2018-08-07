@@ -5,7 +5,6 @@ import pickle
 import linecache
 
 from tqdm import tqdm
-import tensorflow as tf
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -59,16 +58,7 @@ def dump_graph(history, filename):
 
 def evaluate(model, test_generator, metric, index_to_token, answer_limit=30):
     for inputs, answer in test_generator:
-        start_scores, end_scores = model.predict_on_batch(inputs)
-        scores = tf.matmul(tf.expand_dims(start_scores, axis=2),
-                           tf.expand_dims(end_scores, axis=1))
-        scores = tf.matrix_band_part(scores, 0, answer_limit)
-        start_indices = tf.argmax(tf.reduce_max(scores, axis=2, keepdims=True), axis=1)
-        end_indices = tf.argmax(tf.reduce_max(scores, axis=1, keepdims=True), axis=2)
-
-        with tf.Session() as sess:
-            start_indices = sess.run(start_indices).reshape(-1)
-            end_indices = sess.run(end_indices).reshape(-1)
+        _, _, start_indices, end_indices = model.predict_on_batch(inputs)
 
         context = inputs[1]
         for i, (start, end) in enumerate(zip(start_indices, end_indices)):

@@ -21,15 +21,15 @@ def main(args):
 
     model = FastQA(len(token_to_index), args.embed, args.hidden).build()
     opt = Adam()
-    model.compile(optimizer=opt, loss_weights=[1, 1],
-                  loss=['sparse_categorical_crossentropy', 'sparse_categorical_crossentropy'])
+    model.compile(optimizer=opt, loss_weights=[1, 1, 0, 0],
+                  loss=['sparse_categorical_crossentropy', 'sparse_categorical_crossentropy', None, None])
     train_dataset = SquadReader(args.train_path)
     dev_dataset = SquadReader(args.dev_path)
     converter = SquadConverter(token_to_index, PAD_TOKEN, UNK_TOKEN, lower=args.lower)
     train_generator = Iterator(train_dataset, args.batch, converter)
     dev_generator = Iterator(dev_dataset, args.batch, converter)
     trainer = SquadTrainer(model, train_generator, args.epoch, dev_generator,
-                           './model/fastqa.{epoch:02d}-{val_loss:.2f}.h5')
+                           './models/fastqa.{epoch:02d}-{val_loss:.2f}.h5')
     if args.use_tensorboard:
         trainer.add_callback(TensorBoard(log_dir='./graph', batch_size=args.batch_size))
     history = trainer.run()
