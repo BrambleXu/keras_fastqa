@@ -49,7 +49,7 @@ class WordInQuestionB(Lambda):
             context = tf.expand_dims(context, axis=2)
             wiq_b = tf.to_float(tf.reduce_any(tf.equal(context, question), axis=2))
             mask = tf.sequence_mask(context_len, maxlen=context.shape.as_list()[1], dtype=tf.float32)
-            return tf.expand_dims(wiq_b + 0 * (1 - mask), axis=-1)
+            return tf.expand_dims(wiq_b * mask, axis=-1)
 
         super().__init__(function=func, **kwargs)
 
