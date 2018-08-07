@@ -44,11 +44,12 @@ class WeightedSum(Layer):
 class WordInQuestionB(Lambda):
     def __init__(self, **kwargs):
         def func(inputs):
-            question, context = inputs
+            question, context, context_len = inputs
             question = tf.expand_dims(question, axis=1)
             context = tf.expand_dims(context, axis=2)
-            return tf.expand_dims(tf.to_float(
-                tf.reduce_any(tf.equal(context, question), axis=2)), axis=-1)
+            wiq_b = tf.to_float(tf.reduce_any(tf.equal(context, question), axis=2))
+            mask = tf.sequence_mask(context_len, maxlen=context.shape.as_list()[1], dtype=tf.float32)
+            return tf.expand_dims(wiq_b + 0 * (1 - mask), axis=-1)
 
         super().__init__(function=func, **kwargs)
 
@@ -65,11 +66,17 @@ class WordInQuestionW(Layer):
         super().build(input_shape)
 
     def call(self, inputs):
-        question, context = inputs
+        question, context, question_len, context_len = inputs
         question = tf.expand_dims(question, axis=1)
         context = tf.expand_dims(context, axis=2)
         similarity = tf.squeeze(K.dot(context * question, self.weight), axis=-1)
-        return tf.expand_dims(tf.reduce_sum(tf.nn.softmax(similarity, axis=2), axis=2), axis=-1)
+        question_mask = tf.expand_dims(tf.sequence_mask(
+            question_len, maxlen=question.shape.as_list()[2], dtype=tf.float32), axis=1)
+        context_mask = tf.expand_dims(tf.sequence_mask(
+            context_len, maxlen=context.shape.as_list()[1], dtype=tf.float32), axis=2)
+        mask = tf.matmul(context_mask, question_mask)
+        similarity = similarity + tf.float32.min * (1 - mask)
+        return tf.expand_dims(tf.reduce_sum(tf.nn.softmax(similarity, axis=2) * mask, axis=2), axis=-1)
 
     def compute_output_shape(self, input_shape):
         batch, seq_len, d = input_shape[1]
