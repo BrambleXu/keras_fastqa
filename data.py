@@ -20,19 +20,24 @@ def make_vocab(tokens, min_count, max_vocab_size,
         index_to_token = speicial_tokens + ordered_tokens
     else:
         index_to_token = ordered_tokens
-    if len(index_to_token) > max_vocab_size:
-        index_to_token = index_to_token[:max_vocab_size]
+    if max_vocab_size is not None:
+        if len(index_to_token) > max_vocab_size:
+            index_to_token = index_to_token[:max_vocab_size]
     indices = range(len(index_to_token))
     token_to_index = dict(zip(index_to_token, indices))
     return token_to_index, list(index_to_token)
 
 
-def load_squad_tokens(filename, tokenizer):
+def load_squad_tokens(filename, tokenizer, indices=[0, 1]):
     with open(filename) as f:
         data = [row for row in csv.reader(f, delimiter='\t')]
-    data = [[tokenizer(x[0]), tokenizer(x[1])] for x in data]
-    contexts, questions = zip(*data)
-    tokens = (token for tokens in contexts + questions for token in tokens)
+    data = [[tokenizer(x[i]) for i in indices] for x in data]
+    results = list(zip(*data))
+    if len(results) == 1:
+        sequence = results[0]
+    elif len(results) == 2:
+        sequence = results[0] + results[1]
+    tokens = (token for tokens in sequence for token in tokens)
     return tokens
 
 
@@ -180,7 +185,8 @@ class SquadTestConverter(SquadConverter):
         answers = self._get_valid_tokenized_answers(answers)
         context_batch = self._process_text(contexts, self._context_max_len)
         question_batch = self._process_text(questions, self._question_max_len)
-        return [question_batch, context_batch], answers
+        dummy_start_batch = np.zeros((len(contexts),), dtype=np.int32)
+        return [question_batch, context_batch, dummy_start_batch], answers
 
     def _get_valid_tokenized_answers(self, answers):
         return [
