@@ -29,7 +29,7 @@ def main(args):
     train_generator = Iterator(train_dataset, args.batch, converter)
     dev_generator = Iterator(dev_dataset, args.batch, converter)
     trainer = SquadTrainer(model, train_generator, args.epoch, dev_generator,
-                           './model/fastqa.{epoch:02d}-{val_loss:.2f}.h5')
+                           './models/fastqa.{epoch:02d}-{val_loss:.2f}.h5')
     if args.use_tensorboard:
         trainer.add_callback(TensorBoard(log_dir='./graph', batch_size=args.batch_size))
     history = trainer.run()
