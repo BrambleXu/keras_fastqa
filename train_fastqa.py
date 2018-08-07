@@ -21,8 +21,8 @@ def main(args):
 
     model = FastQA(len(token_to_index), args.embed, args.hidden).build()
     opt = Adam()
-    model.compile(optimizer=opt, loss_weights=[1, 1],
-                  loss=['sparse_categorical_crossentropy', 'sparse_categorical_crossentropy'])
+    model.compile(optimizer=opt, loss_weights=[1, 1, 0, 0],
+                  loss=['sparse_categorical_crossentropy', 'sparse_categorical_crossentropy', None, None])
     train_dataset = SquadReader(args.train_path)
     dev_dataset = SquadReader(args.dev_path)
     converter = SquadConverter(token_to_index, PAD_TOKEN, UNK_TOKEN, lower=args.lower)
