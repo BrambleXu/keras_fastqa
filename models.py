@@ -27,20 +27,21 @@ class FastQA:
         context_input = Input((self.context_limit,))
         start_input = Input((1,))
 
+        question_len = SequenceLength()(question_input)
         context_len = SequenceLength()(context_input)
 
         # question
         Q = self.embed_layer(question_input)
-        Q_wiqb = WordInQuestionB()([question_input, question_input])
-        Q_wiqw = WordInQuestionW()([Q, Q])
+        Q_wiqb = WordInQuestionB()([question_input, question_input, question_len])
+        Q_wiqw = WordInQuestionW()([Q, Q, question_len, question_len])
         Q_ = Concatenate()([Q_wiqb, Q_wiqw, Q])
         Z = self.question_lstm(Q_)
         Z = Reshape((self.question_limit, self.hidden_size * 2))(Z)
         Z = self.question_fc(Z)
         # context
         X = self.embed_layer(context_input)
-        X_wiqb = WordInQuestionB()([question_input, context_input])
-        X_wiqw = WordInQuestionW()([Q, X])
+        X_wiqb = WordInQuestionB()([question_input, context_input, context_len])
+        X_wiqw = WordInQuestionW()([Q, X, question_len, context_len])
         X_ = Concatenate()([X_wiqb, X_wiqw, X])
         H = self.context_lstm(X_)
         H = Reshape((self.context_limit, self.hidden_size * 2))(H)
