@@ -1,10 +1,11 @@
+import tensorflow as tf
 from keras import backend as K
 from keras import Model
 from keras.layers import Input, Embedding, LSTM, Conv1D, Concatenate, \
-    Bidirectional, RepeatVector, Multiply, Reshape
+    Bidirectional, RepeatVector, Multiply, Reshape, Lambda
 
 from layers import WeightedSum, WordInQuestionB, WordInQuestionW, PositionPointer, \
-    IndexSelect, SequenceLength
+    IndexSelect, SequenceLength, Argmax
 
 
 class FastQA:
@@ -58,5 +59,14 @@ class FastQA:
         end_output = self.end_pointer(
             [Concatenate()([H, H_s, Z, mul([H, Z]), mul([H, H_s])]), context_len])
 
+        # prediction
+        start_index = Argmax()(start_output)
+        h_s = IndexSelect()([H, start_index])
+        H_s = RepeatVector(context_limit)(h_s)
+        end_index = Argmax()(self.end_pointer(
+            [Concatenate()([H, H_s, Z, mul([H, Z]), mul([H, H_s])]), context_len]))
+        start_index = Lambda(lambda x: tf.squeeze(x, axis=-1))(start_index)
+        end_index = Lambda(lambda x: tf.squeeze(x, axis=-1))(end_index)
+
         return Model(inputs=[question_input, context_input, start_input],
-                     outputs=[start_output, end_output])
+                     outputs=[start_output, end_output, start_index, end_index])
