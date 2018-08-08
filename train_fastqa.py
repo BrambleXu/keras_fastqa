@@ -8,6 +8,7 @@ from keras.callbacks import TensorBoard
 from models import FastQA
 from data import SquadReader, Iterator, SquadConverter, Vocabulary
 from trainer import SquadTrainer
+from callbacks import LearningRateScheduler
 from utils import dump_graph
 
 from prepare_vocab import PAD_TOKEN, UNK_TOKEN
@@ -33,6 +34,7 @@ def main(args):
     dev_generator = Iterator(dev_dataset, args.batch, converter)
     trainer = SquadTrainer(model, train_generator, args.epoch, dev_generator,
                            './models/fastqa.{epoch:02d}-{val_loss:.2f}.h5')
+    trainer.add_callback(LearningRateScheduler())
     if args.use_tensorboard:
         trainer.add_callback(TensorBoard(log_dir='./graph', batch_size=args.batch))
     history = trainer.run()
