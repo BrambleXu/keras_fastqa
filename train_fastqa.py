@@ -34,7 +34,7 @@ def main(args):
     trainer = SquadTrainer(model, train_generator, args.epoch, dev_generator,
                            './models/fastqa.{epoch:02d}-{val_loss:.2f}.h5')
     if args.use_tensorboard:
-        trainer.add_callback(TensorBoard(log_dir='./graph', batch_size=args.batch_size))
+        trainer.add_callback(TensorBoard(log_dir='./graph', batch_size=args.batch))
     history = trainer.run()
     dump_graph(history, 'loss_graph.png')
 
