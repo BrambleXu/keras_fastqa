@@ -1,5 +1,7 @@
+import os
 from argparse import ArgumentParser
 
+import numpy as np
 from keras.optimizers import Adam
 from keras.callbacks import TensorBoard
 
@@ -14,12 +16,13 @@ from prepare_vocab import PAD_TOKEN, UNK_TOKEN
 def main(args):
     token_to_index, index_to_token = Vocabulary.load(args.vocab_file)
 
-    # root, _ = os.path.splitext(args.vocab_file)
-    # basepath, basename = os.path.split(root)
-    # embed_path = f'{basepath}/embedding_{basename}.npy'
-    # embeddings = np.load(embed_path) if os.path.exists(embed_path) else None
+    root, _ = os.path.splitext(args.vocab_file)
+    basepath, basename = os.path.split(root)
+    embed_path = f'{basepath}/embedding_{basename}.npy'
+    embeddings = np.load(embed_path) if os.path.exists(embed_path) else None
 
-    model = FastQA(len(token_to_index), args.embed, args.hidden).build()
+    model = FastQA(len(token_to_index), args.embed, args.hidden,
+                   dropout=args.dropout, pretrained_embeddings=embeddings).build()
     opt = Adam()
     model.compile(optimizer=opt, loss_weights=[1, 1, 0, 0],
                   loss=['sparse_categorical_crossentropy', 'sparse_categorical_crossentropy', None, None])
