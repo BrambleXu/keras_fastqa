@@ -158,4 +158,4 @@ class Backward(Wrapper):
 
     def compute_output_shape(self, input_shape):
         batch, seq_len, _ = input_shape[0]
-        return (batch, seq_len, self.layer.cell.units)
+        return (batch, seq_len, self.layer.units)
