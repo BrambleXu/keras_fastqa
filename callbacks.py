@@ -11,6 +11,6 @@ class LearningRateScheduler(Callback):
             lr = float(K.get_value(self.model.optimizer.lr))
             lr /= 2
             K.set_value(self.model.optimizer.lr, lr)
-            print(f'\nTraining steps {self.global_steps}: LearningRateScheduler setting learning '
-                  'rate to {lr}')
+            message = f'\nTraining steps {self.global_steps}: LearningRateScheduler setting learning rate to {lr}'
+            print(message)
         self.global_steps += 1
