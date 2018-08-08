@@ -22,7 +22,7 @@ class WeightedSum(Layer):
     def build(self, input_shape):
         self.weight = self.add_weight(name='kernel',
                                       shape=(input_shape[0][-1], 1),
-                                      initializer='glorot_uniform')
+                                      initializer='ones')
         super().build(input_shape)
 
     def call(self, inputs):
