@@ -1,7 +1,7 @@
 import tensorflow as tf
 from keras import backend as K
 from keras.engine.topology import Layer
-from keras.layers import Lambda
+from keras.layers import Lambda, Wrapper
 
 
 class SequenceLength(Lambda):
@@ -139,3 +139,23 @@ class Argmax(Lambda):
 
     def compute_output_shape(self, input_shape):
         return (input_shape[0], 1)
+
+
+class Backward(Wrapper):
+    def __init__(self, layer, **kwargs):
+        super().__init__(layer, **kwargs)
+
+    def build(self, input_shape):
+        self.layer.build(input_shape)
+        super().build()
+
+    def call(self, inputs):
+        x, seq_len = inputs
+        x = tf.reverse_sequence(x, seq_len, seq_axis=1, batch_axis=0)
+        x = self.layer.call(x, mask=None, training=None, initial_state=None)
+        x = tf.reverse_sequence(x, seq_len, seq_axis=1, batch_axis=0)
+        return x
+
+    def compute_output_shape(self, input_shape):
+        batch, seq_len, _ = input_shape[0]
+        return (batch, seq_len, self.layer.cell.units)
