@@ -22,7 +22,7 @@ class WeightedSum(Layer):
     def build(self, input_shape):
         self.weight = self.add_weight(name='kernel',
                                       shape=(input_shape[0][-1], 1),
-                                      initializer='normal')
+                                      initializer='glorot_uniform')
         super().build(input_shape)
 
     def call(self, inputs):
@@ -62,7 +62,7 @@ class WordInQuestionW(Layer):
     def build(self, input_shape):
         self.weight = self.add_weight(name='kernel',
                                       shape=(input_shape[0][-1], 1),
-                                      initializer='normal')
+                                      initializer='ones')
         super().build(input_shape)
 
     def call(self, inputs):
@@ -91,13 +91,13 @@ class PositionPointer(Layer):
     def build(self, input_shape):
         self.weight = self.add_weight(name='weight',
                                       shape=(1, input_shape[0][-1], self.hidden_size),
-                                      initializer='normal')
+                                      initializer='glorot_uniform')
         self.bias = self.add_weight(name='bias',
                                     shape=(self.hidden_size,),
-                                    initializer='normal')
+                                    initializer='zeros')
         self.v = self.add_weight(name='v',
                                  shape=(1, self.hidden_size, 1),
-                                 initializer='normal')
+                                 initializer='glorot_uniform')
         super().build(input_shape)
 
     def call(self, inputs):
