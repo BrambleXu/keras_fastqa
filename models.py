@@ -2,7 +2,7 @@ import tensorflow as tf
 from keras import backend as K
 from keras import Model
 from keras.layers import Input, Embedding, LSTM, Conv1D, Concatenate, \
-    Bidirectional, RepeatVector, Multiply, Reshape, Lambda
+    Bidirectional, RepeatVector, Multiply, Reshape, Lambda, Dropout
 
 from layers import WeightedSum, WordInQuestionB, WordInQuestionW, PositionPointer, \
     IndexSelect, SequenceLength, Argmax
@@ -21,6 +21,7 @@ class FastQA:
         self.question_limit = question_limit
         self.context_limit = context_limit
         self.hidden_size = hidden_size
+        self.dropout = dropout
 
     def build(self):
         question_input = Input((self.question_limit,))
@@ -35,6 +36,8 @@ class FastQA:
         Q_wiqb = WordInQuestionB()([question_input, question_input, question_len])
         Q_wiqw = WordInQuestionW()([Q, Q, question_len, question_len])
         Q_ = Concatenate()([Q_wiqb, Q_wiqw, Q])
+        batch, _, feature_size = Q_.shape.as_list()
+        Q_ = Dropout(self.dropout, (batch, 1, feature_size))(Q_)
         Z = self.question_lstm(Q_)
         Z = Reshape((self.question_limit, self.hidden_size * 2))(Z)
         Z = self.question_fc(Z)
@@ -43,6 +46,7 @@ class FastQA:
         X_wiqb = WordInQuestionB()([question_input, context_input, context_len])
         X_wiqw = WordInQuestionW()([Q, X, question_len, context_len])
         X_ = Concatenate()([X_wiqb, X_wiqw, X])
+        X_ = Dropout(self.dropout, (batch, 1, feature_size))(X_)
         H = self.context_lstm(X_)
         H = Reshape((self.context_limit, self.hidden_size * 2))(H)
         H = self.context_fc(H)
