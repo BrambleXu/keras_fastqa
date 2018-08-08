@@ -10,8 +10,12 @@ from layers import WeightedSum, WordInQuestionB, WordInQuestionW, PositionPointe
 
 class FastQA:
     def __init__(self, vocab_size, embed_size, hidden_size,
-                 question_limit=50, context_limit=400):
-        self.embed_layer = Embedding(vocab_size, embed_size)
+                 question_limit=50, context_limit=400, dropout=.5,
+                 pretrained_embeddings=None):
+        embeddings = None
+        if pretrained_embeddings is not None:
+            embeddings = [pretrained_embeddings]
+        self.embed_layer = Embedding(vocab_size, embed_size, weights=embeddings, trainable=False)
         self.question_lstm = Bidirectional(LSTM(hidden_size, return_sequences=True))
         self.context_lstm = Bidirectional(LSTM(hidden_size, return_sequences=True))
         self.question_fc = Conv1D(hidden_size, 1, activation='tanh', use_bias=False)
