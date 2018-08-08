@@ -5,6 +5,7 @@ from keras.layers import Input, Embedding, LSTM, Conv1D, Concatenate, \
 
 from layers import WeightedSum, WordInQuestionB, WordInQuestionW, PositionPointer, \
     IndexSelect, SequenceLength, Argmax, Backward
+from initializers import init_lstm_projection
 
 
 class FastQA:
@@ -15,12 +16,12 @@ class FastQA:
         if pretrained_embeddings is not None:
             embeddings = [pretrained_embeddings]
         self.embed_layer = Embedding(vocab_size, embed_size, weights=embeddings, trainable=False)
-        self.q_lstm_f = LSTM(hidden_size, return_sequences=True)
-        self.q_lstm_b = Backward(LSTM(hidden_size, return_sequences=True))
-        self.c_lstm_f = LSTM(hidden_size, return_sequences=True)
-        self.c_lstm_b = Backward(LSTM(hidden_size, return_sequences=True))
-        self.q_fc = Conv1D(hidden_size, 1, activation='tanh', use_bias=False)
-        self.c_fc = Conv1D(hidden_size, 1, activation='tanh', use_bias=False)
+        self.lstm_f = LSTM(hidden_size, return_sequences=True)
+        self.lstm_b = Backward(LSTM(hidden_size, return_sequences=True))
+        self.q_fc = Conv1D(hidden_size, 1, activation='tanh', use_bias=False,
+                           kernel_initializer=init_lstm_projection)
+        self.c_fc = Conv1D(hidden_size, 1, activation='tanh', use_bias=False,
+                           kernel_initializer=init_lstm_projection)
         self.start_pointer = PositionPointer(hidden_size)
         self.end_pointer = PositionPointer(hidden_size)
         self.q_limit = question_limit
@@ -43,7 +44,7 @@ class FastQA:
         Q_ = Concatenate()([Q_wiqb, Q_wiqw, Q])
         batch, _, feature_size = Q_.shape.as_list()
         Q_ = Dropout(self.dropout, (batch, 1, feature_size))(Q_)
-        Z = Concatenate()([self.q_lstm_f(Q_), self.q_lstm_b([Q_, q_len])])
+        Z = Concatenate()([self.lstm_f(Q_), self.lstm_b([Q_, q_len])])
         Z = Reshape((self.q_limit, self.hidden_size * 2))(Z)
         Z = self.q_fc(Z)
         # context
@@ -52,7 +53,7 @@ class FastQA:
         X_wiqw = WordInQuestionW()([Q, X, q_len, c_len])
         X_ = Concatenate()([X_wiqb, X_wiqw, X])
         X_ = Dropout(self.dropout, (batch, 1, feature_size))(X_)
-        H = Concatenate()([self.c_lstm_f(X_), self.c_lstm_b([X_, c_len])])
+        H = Concatenate()([self.lstm_f(X_), self.lstm_b([X_, c_len])])
         H = Reshape((self.c_limit, self.hidden_size * 2))(H)
         H = self.c_fc(H)
 
