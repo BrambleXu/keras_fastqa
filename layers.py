@@ -76,7 +76,7 @@ class WordInQuestionW(Layer):
             context_len, maxlen=context.shape.as_list()[1], dtype=tf.float32), axis=2)
         mask = tf.matmul(context_mask, question_mask)
         similarity = similarity + tf.float32.min * (1 - mask)
-        return tf.expand_dims(tf.reduce_sum(tf.nn.softmax(similarity, axis=2) * mask, axis=2), axis=-1)
+        return tf.expand_dims(tf.reduce_sum(tf.nn.softmax(similarity, axis=1) * mask, axis=2), axis=-1)
 
     def compute_output_shape(self, input_shape):
         batch, seq_len, d = input_shape[1]
