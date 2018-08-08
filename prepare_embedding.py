@@ -6,6 +6,7 @@ import numpy as np
 from tqdm import tqdm
 
 from data import Vocabulary
+from prepare_vocab import PAD_TOKEN
 
 
 def save_word_embedding_as_npy(filename, dim):
@@ -38,6 +39,8 @@ def extract_embeddings(vocab, pretrained_vocab, pretrained_embeddings, dim=300):
         if word in pretrained_vocab:
             vector = pretrained_embeddings[pretrained_vocab[word]]
             embeddings[index] = vector
+    if PAD_TOKEN in vocab:
+        embeddings[vocab[PAD_TOKEN]] = 0.
     return embeddings
 
 
