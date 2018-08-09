@@ -4,7 +4,7 @@ from keras.layers import Input, Embedding, LSTM, Conv1D, Concatenate, \
     RepeatVector, Multiply, Reshape, Lambda, Dropout
 
 from layers import WeightedSum, WordInQuestionB, WordInQuestionW, PositionPointer, \
-    IndexSelect, SequenceLength, Argmax, Backward
+    IndexSelect, SequenceLength, Argmax, Backward, Highway
 from initializers import init_lstm_projection
 
 
@@ -16,6 +16,7 @@ class FastQA:
         if pretrained_embeddings is not None:
             embeddings = [pretrained_embeddings]
         self.embed_layer = Embedding(vocab_size, embed_size, weights=embeddings, trainable=False)
+        self.highway = Highway(hidden_size)
         self.lstm_f = LSTM(hidden_size, return_sequences=True)
         self.lstm_b = Backward(LSTM(hidden_size, return_sequences=True))
         self.q_fc = Conv1D(hidden_size, 1, activation='tanh', use_bias=False,
@@ -39,6 +40,7 @@ class FastQA:
 
         # question
         Q = self.embed_layer(q_input)
+        Q = self.highway(Q)
         Q_wiqb = WordInQuestionB()([q_input, q_input, q_len])
         Q_wiqw = WordInQuestionW()([Q, Q, q_len, q_len])
         Q_ = Concatenate()([Q_wiqb, Q_wiqw, Q])
@@ -49,6 +51,7 @@ class FastQA:
         Z = self.q_fc(Z)
         # context
         X = self.embed_layer(c_input)
+        X = self.highway(X)
         X_wiqb = WordInQuestionB()([q_input, c_input, c_len])
         X_wiqw = WordInQuestionW()([Q, X, q_len, c_len])
         X_ = Concatenate()([X_wiqb, X_wiqw, X])
