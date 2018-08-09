@@ -41,6 +41,25 @@ class WeightedSum(Layer):
         return (batch, d)
 
 
+class Ones(Lambda):
+    def __init__(self, output_size, **kwargs):
+        self.output_size = output_size
+
+        def func(inputs):
+            q, q_len = inputs
+            _, seq_len = q.shape.as_list()
+            x = tf.ones((1, seq_len), dtype=tf.float32)
+            mask = tf.sequence_mask(q_len, maxlen=seq_len, dtype=tf.float32)
+            x = tf.expand_dims(x * mask, axis=-1)
+            return tf.tile(x, [1, 1, output_size])
+
+        super().__init__(function=func, **kwargs)
+
+    def compute_output_shape(self, input_shape):
+        batch, seq_len = input_shape[0]
+        return (batch, seq_len, self.output_size)
+
+
 class WordInQuestionB(Lambda):
     def __init__(self, **kwargs):
         def func(inputs):
@@ -81,6 +100,39 @@ class WordInQuestionW(Layer):
     def compute_output_shape(self, input_shape):
         batch, seq_len, d = input_shape[1]
         return (batch, seq_len, 1)
+
+
+class Highway(Layer):
+    def __init__(self, hidden_size, **kwargs):
+        self.hidden_size = hidden_size
+        super().__init__(**kwargs)
+
+    def build(self, input_shape):
+        self.projection = self.add_weight(name='projection',
+                                          shape=(1, input_shape[-1], self.hidden_size),
+                                          initializer='glorot_uniform')
+        self.W_h = self.add_weight(name='W_h',
+                                   shape=(1, self.hidden_size, self.hidden_size),
+                                   initializer='glorot_uniform')
+        self.b_h = self.add_weight(name='b_h',
+                                   shape=(self.hidden_size,),
+                                   initializer='zeros')
+        self.W_t = self.add_weight(name='W_t',
+                                   shape=(1, self.hidden_size, self.hidden_size),
+                                   initializer='glorot_uniform')
+        self.b_t = self.add_weight(name='b_t',
+                                   shape=(self.hidden_size,),
+                                   initializer='zeros')
+
+    def call(self, x):
+        x = K.conv1d(x, self.projection)
+        H = tf.nn.tanh(K.bias_add(K.conv1d(x, self.W_h), self.b_h))
+        T = tf.nn.sigmoid(K.bias_add(K.conv1d(x, self.W_t), self.b_t))
+        return T * x + (1 - T) * H
+
+    def compute_output_shape(self, input_shape):
+        batch, seq_len, d = input_shape
+        return (batch, seq_len, self.hidden_size)
 
 
 class PositionPointer(Layer):
