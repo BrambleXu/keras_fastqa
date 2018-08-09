@@ -51,10 +51,10 @@ class FastQA:
         Z = self.q_fc(Z)
         # context
         X = self.embed_layer(c_input)
-        X = self.highway(X)
+        X_ = self.highway(X)
         X_wiqb = WordInQuestionB()([q_input, c_input, c_len])
         X_wiqw = WordInQuestionW()([Q, X, q_len, c_len])
-        X_ = Concatenate()([X_wiqb, X_wiqw, X])
+        X_ = Concatenate()([X_wiqb, X_wiqw, X_])
         X_ = Dropout(self.dropout, (batch, 1, feature_size))(X_)
         H = Concatenate()([self.lstm_f(X_), self.lstm_b([X_, c_len])])
         H = Reshape((self.c_limit, self.hidden_size * 2))(H)
