@@ -41,6 +41,25 @@ class WeightedSum(Layer):
         return (batch, d)
 
 
+class Ones(Lambda):
+    def __init__(self, output_size, **kwargs):
+        self.output_size = output_size
+
+        def func(inputs):
+            q, q_len = inputs
+            _, seq_len = q.shape.as_list()
+            x = tf.ones((1, seq_len), dtype=tf.float32)
+            mask = tf.sequence_mask(q_len, maxlen=seq_len, dtype=tf.float32)
+            x = tf.expand_dims(x * mask, axis=-1)
+            return tf.tile(x, [1, 1, output_size])
+
+        super().__init__(function=func, **kwargs)
+
+    def compute_output_shape(self, input_shape):
+        batch, seq_len = input_shape[0]
+        return (batch, seq_len, self.output_size)
+
+
 class WordInQuestionB(Lambda):
     def __init__(self, **kwargs):
         def func(inputs):
