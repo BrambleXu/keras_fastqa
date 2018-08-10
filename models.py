@@ -43,12 +43,13 @@ class FastQA:
         # question
         # embedding
         Q_e = self.embed_layer(q_input)
-        Q_e = Dropout(self.dropout, (batch, 1, self.embed_size))(Q_e)
-        Q_ = self.highway(Q_e)
         # feature
         Q_wiq = Ones(2)([q_input, q_len])
+        # embedding
+        Q_e = Dropout(self.dropout, (batch, 1, self.embed_size))(Q_e)
+        Q_e = self.highway(Q_e)
         # lstm input
-        Q_ = Concatenate()([Q_, Q_wiq])
+        Q_ = Concatenate()([Q_e, Q_wiq])
         # bilstm
         Z = Concatenate()([self.lstm_f(Q_), self.lstm_b([Q_, q_len])])
         Z = Reshape((self.q_limit, self.hidden_size * 2))(Z)
@@ -58,13 +59,14 @@ class FastQA:
         # context
         # embedding
         X_e = self.embed_layer(c_input)
-        X_e = Dropout(self.dropout, (batch, 1, self.embed_size))(X_e)
-        X_ = self.highway(X_e)
         # feature
         X_wiqb = WordInQuestionB()([q_input, c_input, c_len])
         X_wiqw = WordInQuestionW()([Q_e, X_e, q_len, c_len])
+        # embedding
+        X_e = Dropout(self.dropout, (batch, 1, self.embed_size))(X_e)
+        X_e = self.highway(X_e)
         # lstm input
-        X_ = Concatenate()([X_, X_wiqb, X_wiqw])
+        X_ = Concatenate()([X_e, X_wiqb, X_wiqw])
         # bilstm
         H = Concatenate()([self.lstm_f(X_), self.lstm_b([X_, c_len])])
         H = Reshape((self.c_limit, self.hidden_size * 2))(H)
