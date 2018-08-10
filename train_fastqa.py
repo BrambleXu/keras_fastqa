@@ -8,7 +8,7 @@ from keras.callbacks import TensorBoard
 from models import FastQA
 from data import SquadReader, Iterator, SquadConverter, Vocabulary
 from trainer import SquadTrainer
-from callbacks import FastQALRScheduler
+from callbacks import FastQALRScheduler, FastQACheckpoint
 from utils import dump_graph
 
 from prepare_vocab import PAD_TOKEN, UNK_TOKEN
@@ -34,7 +34,8 @@ def main(args):
     dev_generator = Iterator(dev_dataset, args.batch, converter)
     trainer = SquadTrainer(model, train_generator, args.epoch, dev_generator,
                            './models/fastqa.{epoch:02d}-{val_loss:.2f}.h5')
-    trainer.add_callback(FastQALRScheduler(dev_generator))
+    trainer.add_callback(FastQALRScheduler(dev_generator, steps=args.steps))
+    trainer.add_callback(FastQACheckpoint('./models/fastqa.{steps:06d}.h5', steps=args.steps))
     if args.use_tensorboard:
         trainer.add_callback(TensorBoard(log_dir='./graph', batch_size=args.batch))
     history = trainer.run()
@@ -48,6 +49,7 @@ if __name__ == '__main__':
     parser.add_argument('--embed', default=300, type=int)
     parser.add_argument('--hidden', default=300, type=int)
     parser.add_argument('--dropout', default=0.5, type=float)
+    parser.add_argument('--steps', default=1000, type=int)
     parser.add_argument('--train-path', default='./data/train-v1.1_filtered_train.txt', type=str)
     parser.add_argument('--dev-path', default='./data/train-v1.1_filtered_dev.txt', type=str)
     parser.add_argument('--test-path', default='./data/dev-v1.1_filtered.txt', type=str)
