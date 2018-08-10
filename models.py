@@ -27,6 +27,7 @@ class FastQA:
         self.end_pointer = PositionPointer(hidden_size)
         self.q_limit = question_limit
         self.c_limit = context_limit
+        self.embed_size = embed_size
         self.hidden_size = hidden_size
         self.dropout = dropout
 
@@ -35,26 +36,26 @@ class FastQA:
         c_input = Input((self.c_limit,))
         start_input = Input((1,))
 
+        batch = q_input.shape.as_list()[0]
         q_len = SequenceLength()(q_input)
         c_len = SequenceLength()(c_input)
 
         # question
         Q = self.embed_layer(q_input)
+        Q = Dropout(self.dropout, (batch, 1, self.embed_size))(Q)
         Q = self.highway(Q)
         Q_wiq = Ones(2)([q_input, q_len])
         Q_ = Concatenate()([Q, Q_wiq])
-        batch, _, feature_size = Q_.shape.as_list()
-        Q_ = Dropout(self.dropout, (batch, 1, feature_size))(Q_)
         Z = Concatenate()([self.lstm_f(Q_), self.lstm_b([Q_, q_len])])
         Z = Reshape((self.q_limit, self.hidden_size * 2))(Z)
         Z = self.q_fc(Z)
         # context
         X = self.embed_layer(c_input)
+        X = Dropout(self.dropout, (batch, 1, self.embed_size))(X)
         X_ = self.highway(X)
         X_wiqb = WordInQuestionB()([q_input, c_input, c_len])
         X_wiqw = WordInQuestionW()([Q, X, q_len, c_len])
         X_ = Concatenate()([X_, X_wiqb, X_wiqw])
-        X_ = Dropout(self.dropout, (batch, 1, feature_size))(X_)
         H = Concatenate()([self.lstm_f(X_), self.lstm_b([X_, c_len])])
         H = Reshape((self.c_limit, self.hidden_size * 2))(H)
         H = self.c_fc(H)
