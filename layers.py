@@ -135,7 +135,7 @@ class Highway(Layer):
         return (batch, seq_len, self.hidden_size)
 
 
-class PositionPointer(Layer):
+class StartPointer(Layer):
     def __init__(self, hidden_size, **kwargs):
         self.hidden_size = hidden_size
         super().__init__(**kwargs)
@@ -163,6 +163,20 @@ class PositionPointer(Layer):
     def compute_output_shape(self, input_shape):
         batch, seq_len, d = input_shape[0]
         return (batch, seq_len)
+
+
+class EndPointer(StartPointer):
+    def call(self, inputs):
+        x, seq_len, start_indices = inputs
+        pos = tf.nn.relu(K.bias_add(K.conv1d(x, self.weight), self.bias))
+        logits = tf.squeeze(K.conv1d(pos, self.v), axis=-1)
+        maxlen = x.shape.as_list()[1]
+        start_indices = tf.reshape(start_indices, [-1])
+        left_mask = tf.sequence_mask(start_indices - 1, maxlen=maxlen, dtype=tf.float32)
+        logits = logits + tf.float32.min * left_mask
+        mask = tf.sequence_mask(seq_len, maxlen=maxlen, dtype=tf.float32)
+        logits = logits + tf.float32.min * (1 - mask)
+        return tf.nn.softmax(logits, axis=-1)
 
 
 class IndexSelect(Lambda):
