@@ -122,7 +122,7 @@ def split_dataset(filename, ratio=0.8, overwrite=False):
     with open(filename) as f:
         num_lines = len(f.readlines())
 
-    train_size = round(num_lines * 0.8)
+    train_size = round(num_lines * ratio)
     indices = list(range(num_lines))
     random.shuffle(indices)
 
