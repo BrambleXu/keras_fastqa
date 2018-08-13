@@ -170,10 +170,9 @@ class IndexSelect(Lambda):
         def func(inputs):
             x, indices = inputs
             # (batch, seq_len, hidden_size)
-            shape = x.shape.as_list()
-            mask = tf.transpose(K.one_hot(tf.to_int32(indices), shape[1]), [0, 2, 1])
-            # return tf.boolean_mask(x, mask)
-            return tf.reduce_sum(x * mask, axis=1)
+            indices = tf.reshape(tf.to_int32(indices), [-1])
+            indices = tf.stack([tf.range(tf.shape(x)[0]), indices], axis=1)
+            return tf.gather_nd(x, indices)
 
         super().__init__(function=func, **kwargs)
 
@@ -183,14 +182,14 @@ class IndexSelect(Lambda):
 
 
 class Argmax(Lambda):
-    def __init__(self, **kwargs):
+    def __init__(self, axis=-1, **kwargs):
         def func(x):
-            return tf.expand_dims(tf.argmax(x, axis=-1), axis=-1)
+            return tf.argmax(x, axis=axis, output_type=tf.int32)
 
         super().__init__(function=func, **kwargs)
 
     def compute_output_shape(self, input_shape):
-        return (input_shape[0], 1)
+        return (input_shape[0],)
 
 
 class Backward(Wrapper):
