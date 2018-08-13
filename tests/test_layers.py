@@ -4,7 +4,7 @@ import numpy as np
 from keras import Model
 from keras.layers import Input, Embedding
 
-from layers import WordInQuestionB, WordInQuestionW, SequenceLength
+from layers import WordInQuestionB, WordInQuestionW, SequenceLength, PositionPointer
 
 
 class WIQLayerTest(TestCase):
@@ -45,3 +45,19 @@ class WIQLayerTest(TestCase):
                              0.38868755, 0.61131245, 0.38868755, 0, 0, 0, 0],
                             dtype=np.float32)[None, :, None]
         np.testing.assert_almost_equal(result, expected)
+
+
+class PositionPointerTest(TestCase):
+    def test_position_pointer(self):
+        # inputs
+        c = np.array([[1, 4, 2, 5, 3, 6, 0, 0, 0, 0]], dtype=np.int32)
+
+        # building graph
+        c_input = Input((10,))
+        c_len = SequenceLength()(c_input)
+        output = PositionPointer(1)([Embedding(7, 7)(c_input), c_len])
+        model = Model([c_input], output)
+
+        # assertion
+        result = model.predict([c])
+        np.testing.assert_almost_equal(result > 0., c > 0.)
