@@ -166,15 +166,25 @@ class StartPointer(Layer):
 
 
 class EndPointer(StartPointer):
+    def __init__(self, hidden_size, max_span_size=30, **kwargs):
+        self.hidden_size = hidden_size
+        self.max_span_size = max_span_size
+        super().__init__(hidden_size, **kwargs)
+
     def call(self, inputs):
         x, seq_len, start_indices = inputs
         pos = tf.nn.relu(K.bias_add(K.conv1d(x, self.weight), self.bias))
         logits = tf.squeeze(K.conv1d(pos, self.v), axis=-1)
         maxlen = x.shape.as_list()[1]
+        # left mask
         start_indices = tf.reshape(start_indices, [-1])
         left_mask = tf.sequence_mask(start_indices - 1, maxlen=maxlen, dtype=tf.float32)
         logits = logits + tf.float32.min * left_mask
-        mask = tf.sequence_mask(seq_len, maxlen=maxlen, dtype=tf.float32)
+        # padding mask and right mask
+        padding_mask = tf.sequence_mask(seq_len, maxlen=maxlen, dtype=tf.float32)
+        right_mask = tf.sequence_mask(start_indices + self.max_span_size,
+                                      maxlen=maxlen, dtype=tf.float32)
+        mask = padding_mask * right_mask
         logits = logits + tf.float32.min * (1 - mask)
         return tf.nn.softmax(logits, axis=-1)
 
