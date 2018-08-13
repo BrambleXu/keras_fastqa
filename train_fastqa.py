@@ -2,6 +2,9 @@ import os
 from argparse import ArgumentParser
 
 import numpy as np
+from tensorflow.python import debug as tfdbg
+from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
+from keras import backend as K
 from keras.optimizers import Adam
 from keras.callbacks import TensorBoard
 
@@ -56,5 +59,11 @@ if __name__ == '__main__':
     parser.add_argument('--vocab-file', default='./data/vocab_question_context_min-freq10_max_size.pkl', type=str)
     parser.add_argument('--lower', default=False, action='store_true')
     parser.add_argument('--use-tensorboard', default=False, action='store_true')
+    parser.add_argument('--debug', default=False, action='store_true')
     args = parser.parse_args()
+    if args.debug:
+        sess = K.get_session()
+        sess = tfdbg.LocalCLIDebugWrapperSession(sess)
+        sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
+        K.set_session(sess)
     main(args)
