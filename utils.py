@@ -5,7 +5,6 @@ import pickle
 import linecache
 
 from tqdm import tqdm
-import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa
