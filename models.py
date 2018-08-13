@@ -1,10 +1,10 @@
-import tensorflow as tf
 from keras import Model
 from keras.layers import Input, Embedding, LSTM, Conv1D, Concatenate, \
-    RepeatVector, Multiply, Reshape, Lambda, Dropout
+    RepeatVector, Multiply, Reshape, Dropout
 
-from layers import WeightedSum, WordInQuestionB, WordInQuestionW, PositionPointer, \
-    IndexSelect, SequenceLength, Argmax, Backward, Highway, Ones
+from layers import WeightedSum, WordInQuestionB, WordInQuestionW, \
+    IndexSelect, SequenceLength, Argmax, Backward, Highway, Ones, \
+    StartPointer, EndPointer
 from initializers import init_lstm_projection
 
 
@@ -23,8 +23,8 @@ class FastQA:
                            kernel_initializer=init_lstm_projection)
         self.c_fc = Conv1D(hidden_size, 1, activation='tanh', use_bias=False,
                            kernel_initializer=init_lstm_projection)
-        self.start_pointer = PositionPointer(hidden_size)
-        self.end_pointer = PositionPointer(hidden_size)
+        self.start_pointer = StartPointer(hidden_size)
+        self.end_pointer = EndPointer(hidden_size)
         self.q_limit = question_limit
         self.c_limit = context_limit
         self.embed_size = embed_size
@@ -83,16 +83,14 @@ class FastQA:
         h_s = IndexSelect()([H, start_input])
         H_s = RepeatVector(self.c_limit)(h_s)
         end_output = self.end_pointer(
-            [Concatenate()([H, H_s, Z, mul([H, Z]), mul([H, H_s])]), c_len])
+            [Concatenate()([H, H_s, Z, mul([H, Z]), mul([H, H_s])]), c_len, start_input])
 
         # prediction
         start_index = Argmax()(start_output)
         h_s = IndexSelect()([H, start_index])
         H_s = RepeatVector(self.c_limit)(h_s)
         end_index = Argmax()(self.end_pointer(
-            [Concatenate()([H, H_s, Z, mul([H, Z]), mul([H, H_s])]), c_len]))
-        start_index = Lambda(lambda x: tf.squeeze(x, axis=-1))(start_index)
-        end_index = Lambda(lambda x: tf.squeeze(x, axis=-1))(end_index)
+            [Concatenate()([H, H_s, Z, mul([H, Z]), mul([H, H_s])]), c_len, start_index]))
 
         return Model(inputs=[q_input, c_input, start_input],
                      outputs=[start_output, end_output, start_index, end_index])
