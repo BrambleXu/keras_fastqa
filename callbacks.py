@@ -3,12 +3,13 @@ from keras.callbacks import Callback
 
 
 class FastQALRScheduler(Callback):
-    def __init__(self, val_generator, steps=1000):
+    def __init__(self, val_generator, min_lr=0.0001, steps=1000):
         self.val_generator = val_generator
         self.val_steps = len(val_generator)
         self.global_steps = 1
         self.steps = steps
         self.last_val_loss = float('inf')
+        self.min_lr = min_lr
 
     def on_batch_end(self, batch, logs=None):
         if self.global_steps % self.steps == 0:
@@ -17,6 +18,7 @@ class FastQALRScheduler(Callback):
             lr = float(K.get_value(self.model.optimizer.lr))
             if self.last_val_loss < val_loss:
                 lr /= 2
+                lr = max(lr, self.min_lr)
                 K.set_value(self.model.optimizer.lr, lr)
             message = f'\nTraining steps {self.global_steps} (val_loss {val_loss:.2f}): learning rate to {lr:.8f}'
             print(message)
