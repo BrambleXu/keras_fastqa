@@ -26,13 +26,15 @@ def main(args):
     embeddings = np.load(embed_path) if os.path.exists(embed_path) else None
 
     model = FastQA(len(token_to_index), args.embed, args.hidden,
+                   question_limit=args.q_len, context_limit=args.c_len,
                    dropout=args.dropout, pretrained_embeddings=embeddings).build()
     opt = Adam()
     model.compile(optimizer=opt, loss_weights=[1, 1, 0, 0],
                   loss=['sparse_categorical_crossentropy', 'sparse_categorical_crossentropy', None, None])
     train_dataset = SquadReader(args.train_path)
     dev_dataset = SquadReader(args.dev_path)
-    converter = SquadConverter(token_to_index, PAD_TOKEN, UNK_TOKEN, lower=args.lower)
+    converter = SquadConverter(token_to_index, PAD_TOKEN, UNK_TOKEN, lower=args.lower,
+                               question_max_len=args.q_len, context_max_len=args.c_len)
     train_generator = Iterator(train_dataset, args.batch, converter)
     dev_generator = Iterator(dev_dataset, args.batch, converter)
     trainer = SquadTrainer(model, train_generator, args.epoch, dev_generator,
@@ -52,11 +54,13 @@ if __name__ == '__main__':
     parser.add_argument('--embed', default=300, type=int)
     parser.add_argument('--hidden', default=300, type=int)
     parser.add_argument('--dropout', default=0.5, type=float)
+    parser.add_argument('--q-len', default=50, type=int)
+    parser.add_argument('--c-len', default=650, type=int)
     parser.add_argument('--steps', default=1000, type=int)
-    parser.add_argument('--train-path', default='./data/train-v1.1_filtered_train.txt', type=str)
-    parser.add_argument('--dev-path', default='./data/train-v1.1_filtered_dev.txt', type=str)
-    parser.add_argument('--test-path', default='./data/dev-v1.1_filtered.txt', type=str)
-    parser.add_argument('--vocab-file', default='./data/vocab_question_context_min-freq10_max_size.pkl', type=str)
+    parser.add_argument('--train-path', default='./data/train-v1.1_train.txt', type=str)
+    parser.add_argument('--dev-path', default='./data/train-v1.1_dev.txt', type=str)
+    parser.add_argument('--test-path', default='./data/dev-v1.1.txt', type=str)
+    parser.add_argument('--vocab-file', default='./data/vocab_question_context_min-freq1_max_size.pkl', type=str)
     parser.add_argument('--lower', default=False, action='store_true')
     parser.add_argument('--use-tensorboard', default=False, action='store_true')
     parser.add_argument('--debug', default=False, action='store_true')
