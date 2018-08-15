@@ -1,9 +1,7 @@
 import os
 from argparse import ArgumentParser
 
-import spacy
-
-from data import load_squad_tokens, Vocabulary
+from data import load_squad_tokens, Vocabulary, get_tokenizer
 
 
 PAD_TOKEN = '<pad>'
@@ -11,12 +9,7 @@ UNK_TOKEN = '<unk>'
 
 
 def main(args):
-    spacy_en = spacy.load('en_core_web_sm', disable=['vectors', 'textcat', 'tagger', 'parser', 'ner'])
-
-    postprocess = str.lower if args.lower else lambda x: x
-
-    def tokenizer(x):
-        return [postprocess(token.text) for token in spacy_en(x) if not token.is_space]
+    tokenizer = get_tokenizer(lower=args.lower, as_str=True)
 
     if args.only_question:
         indices = [1]

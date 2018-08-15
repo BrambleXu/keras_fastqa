@@ -9,7 +9,7 @@ from keras.optimizers import Adam
 from keras.callbacks import TensorBoard
 
 from models import FastQA
-from data import SquadReader, Iterator, SquadConverter, Vocabulary
+from data import SquadReader, Iterator, SquadConverter, Vocabulary, get_tokenizer
 from trainer import SquadTrainer
 from callbacks import FastQALRScheduler, FastQACheckpoint
 from utils import dump_graph
@@ -33,7 +33,8 @@ def main(args):
                   loss=['sparse_categorical_crossentropy', 'sparse_categorical_crossentropy', None, None])
     train_dataset = SquadReader(args.train_path)
     dev_dataset = SquadReader(args.dev_path)
-    converter = SquadConverter(token_to_index, PAD_TOKEN, UNK_TOKEN, lower=args.lower,
+    tokenizer = get_tokenizer(lower=args.lower, as_str=False)
+    converter = SquadConverter(token_to_index, PAD_TOKEN, UNK_TOKEN, tokenizer,
                                question_max_len=args.q_len, context_max_len=args.c_len)
     train_generator = Iterator(train_dataset, args.batch, converter)
     dev_generator = Iterator(dev_dataset, args.batch, converter)
