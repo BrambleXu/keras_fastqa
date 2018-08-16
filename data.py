@@ -192,7 +192,8 @@ class SquadTestConverter(SquadConverter):
         context_batch = self._process_text(contexts, self._context_max_len)
         question_batch = self._process_text(questions, self._question_max_len)
         dummy_start_batch = np.zeros((len(contexts),), dtype=np.int32)
-        return [question_batch, context_batch, dummy_start_batch], answers
+        contexts = [[token.text for token in context] for context in contexts]
+        return [question_batch, context_batch, dummy_start_batch], [contexts, answers]
 
     def _get_valid_tokenized_answers(self, answers):
         return [
@@ -209,4 +210,5 @@ class SquadEvalConverter(SquadConverter):
         context_batch = self._process_text(contexts, self._context_max_len)
         question_batch = self._process_text(questions, self._question_max_len)
         dummy_start_batch = np.zeros((len(contexts),), dtype=np.int32)
-        return [question_batch, context_batch, dummy_start_batch], ids
+        contexts = [[token.text for token in context] for context in contexts]
+        return [question_batch, context_batch, dummy_start_batch], [contexts, ids]
