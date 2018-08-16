@@ -9,7 +9,7 @@ from prepare_vocab import PAD_TOKEN, UNK_TOKEN
 
 
 def main(args):
-    token_to_index, index_to_token = Vocabulary.load(args.vocab_file)
+    token_to_index, _ = Vocabulary.load(args.vocab_file)
 
     model = FastQA(len(token_to_index), args.embed, args.hidden,
                    question_limit=args.q_len, context_limit=args.c_len).build()
@@ -21,7 +21,7 @@ def main(args):
     converter = SquadTestConverter(token_to_index, PAD_TOKEN, UNK_TOKEN, tokenizer,
                                    question_max_len=args.q_len, context_max_len=args.c_len)
     test_generator = Iterator(test_dataset, args.batch, converter, False, False)
-    em_score, f1_score = evaluate(model, test_generator, metric, index_to_token)
+    em_score, f1_score = evaluate(model, test_generator, metric)
     print('EM: {}, F1: {}'.format(em_score, f1_score))
 
 
