@@ -1,3 +1,4 @@
+import os.path as osp
 import json
 from argparse import ArgumentParser
 
@@ -27,7 +28,10 @@ def main(args):
             prediction = ' '.join(contexts[i][j] for j in range(start, end + 1))
             predictions[ids[i]] = prediction
 
-    with open('predictions.json', 'w') as f:
+    basename = osp.splitext(osp.basename(args.model_path))[0]
+    save_path = osp.join(args.save_dir, f'predictions_{basename}.json')
+
+    with open(save_path, 'w') as f:
         json.dump(predictions, f, indent=2)
 
 
@@ -42,5 +46,6 @@ if __name__ == '__main__':
     parser.add_argument('--q-len', default=50, type=int)
     parser.add_argument('--c-len', default=650, type=int)
     parser.add_argument('--model-path', type=str)
+    parser.add_argument('--save-dir', type=str, default='.')
     args = parser.parse_args()
     main(args)
