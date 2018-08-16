@@ -8,7 +8,7 @@ from prepare_vocab import PAD_TOKEN, UNK_TOKEN
 
 
 def main(args):
-    token_to_index, index_to_token = Vocabulary.load(args.vocab_file)
+    token_to_index, _ = Vocabulary.load(args.vocab_file)
 
     model = FastQA(len(token_to_index), args.embed, args.hidden,
                    question_limit=args.q_len, context_limit=args.c_len).build()
@@ -20,13 +20,12 @@ def main(args):
                                    question_max_len=args.q_len, context_max_len=args.c_len)
     test_generator = Iterator(test_dataset, args.batch, converter, False, False)
     predictions = {}
-    for inputs, id_ in test_generator:
+    for inputs, (contexts, ids) in test_generator:
         _, _, start_indices, end_indices = model.predict_on_batch(inputs)
 
-        context = inputs[1]
         for i, (start, end) in enumerate(zip(start_indices, end_indices)):
-            prediction = ' '.join(index_to_token[context[i][j]] for j in range(start, end + 1))
-            predictions[id_[i]] = prediction
+            prediction = ' '.join(contexts[i][j] for j in range(start, end + 1))
+            predictions[ids[i]] = prediction
 
     with open('predictions.json', 'w') as f:
         json.dump(predictions, f, indent=2)
