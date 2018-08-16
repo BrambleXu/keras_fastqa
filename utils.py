@@ -55,14 +55,13 @@ def dump_graph(history, filename):
     plt.savefig(filename)
 
 
-def evaluate(model, test_generator, metric, index_to_token, answer_limit=30):
-    for inputs, answer in test_generator:
+def evaluate(model, test_generator, metric):
+    for inputs, (contexts, answers) in test_generator:
         _, _, start_indices, end_indices = model.predict_on_batch(inputs)
 
-        context = inputs[1]
         for i, (start, end) in enumerate(zip(start_indices, end_indices)):
-            prediction = ' '.join(index_to_token[context[i][j]] for j in range(start, end + 1))
-            metric(prediction, answer[i])
+            prediction = ' '.join(contexts[i][j] for j in range(start, end + 1))
+            metric(prediction, answers[i])
     return metric.get_metric()
 
 
