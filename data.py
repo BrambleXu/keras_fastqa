@@ -183,25 +183,6 @@ class SquadConverter:
             for text in texts], dtype=np.int32)
 
 
-class SquadTestConverter(SquadConverter):
-    def __call__(self, batch):
-        contexts, questions, _, _, answers, ids = zip(*batch)
-        contexts = [self._tokenizer(context) for context in contexts]
-        questions = [self._tokenizer(question) for question in questions]
-        answers = self._get_valid_tokenized_answers(answers)
-        context_batch = self._process_text(contexts, self._context_max_len)
-        question_batch = self._process_text(questions, self._question_max_len)
-        dummy_start_batch = np.zeros((len(contexts),), dtype=np.int32)
-        contexts = [[token.text for token in context] for context in contexts]
-        return [question_batch, context_batch, dummy_start_batch], [contexts, answers]
-
-    def _get_valid_tokenized_answers(self, answers):
-        return [
-            ' '.join([token.text for token in self._tokenizer(answer)])
-            for answer in answers
-        ]
-
-
 class SquadEvalConverter(SquadConverter):
     def __call__(self, batch):
         contexts, questions, _, _, answers, ids = zip(*batch)
