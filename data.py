@@ -158,7 +158,7 @@ class SquadConverter:
         self._context_max_len = context_max_len
 
     def __call__(self, batch):
-        contexts, questions, starts, ends, answers = zip(*batch)
+        contexts, questions, starts, ends, answers, ids = zip(*batch)
 
         contexts = [self._tokenizer(context) for context in contexts]
         questions = [self._tokenizer(question) for question in questions]
@@ -185,7 +185,7 @@ class SquadConverter:
 
 class SquadTestConverter(SquadConverter):
     def __call__(self, batch):
-        contexts, questions, _, _, answers = zip(*batch)
+        contexts, questions, _, _, answers, ids = zip(*batch)
         contexts = [self._tokenizer(context) for context in contexts]
         questions = [self._tokenizer(question) for question in questions]
         answers = self._get_valid_tokenized_answers(answers)
@@ -199,3 +199,14 @@ class SquadTestConverter(SquadConverter):
             ' '.join([token.text for token in self._tokenizer(answer)])
             for answer in answers
         ]
+
+
+class SquadEvalConverter(SquadConverter):
+    def __call__(self, batch):
+        contexts, questions, _, _, answers, ids = zip(*batch)
+        contexts = [self._tokenizer(context) for context in contexts]
+        questions = [self._tokenizer(question) for question in questions]
+        context_batch = self._process_text(contexts, self._context_max_len)
+        question_batch = self._process_text(questions, self._question_max_len)
+        dummy_start_batch = np.zeros((len(contexts),), dtype=np.int32)
+        return [question_batch, context_batch, dummy_start_batch], ids
