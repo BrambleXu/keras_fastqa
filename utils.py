@@ -55,16 +55,6 @@ def dump_graph(history, filename):
     plt.savefig(filename)
 
 
-def evaluate(model, test_generator, metric):
-    for inputs, (contexts, answers) in test_generator:
-        _, _, start_indices, end_indices = model.predict_on_batch(inputs)
-
-        for i, (start, end) in enumerate(zip(start_indices, end_indices)):
-            prediction = ' '.join(contexts[i][j] for j in range(start, end + 1))
-            metric(prediction, answers[i])
-    return metric.get_metric()
-
-
 def filter_dataset(filename, question_max_length=50, context_max_length=400):
     import spacy
     import csv
