@@ -33,7 +33,7 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--vocab-path', default='./data/vocab.pkl', type=str)
-    parser.add_argument('--train-path', default='./data/train-v1.1_filtered_train.txt', type=str)
+    parser.add_argument('--train-path', default='./data/train-v1.1.txt', type=str)
     parser.add_argument('--min-freq', default=10, type=int)
     parser.add_argument('--max-size', default=None, type=int)
     parser.add_argument('--only-question', default=False, action='store_true')

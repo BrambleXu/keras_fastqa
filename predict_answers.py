@@ -1,28 +1,38 @@
+import os.path as osp
+import json
 from argparse import ArgumentParser
 
 from models import FastQA
-from data import SquadReader, Iterator, Vocabulary, SquadTestConverter, get_tokenizer
-from metrics import SquadMetric
-from utils import evaluate
+from data import SquadReader, Iterator, Vocabulary, SquadEvalConverter, get_tokenizer
 
 from prepare_vocab import PAD_TOKEN, UNK_TOKEN
 
 
 def main(args):
-    token_to_index, index_to_token = Vocabulary.load(args.vocab_file)
+    token_to_index, _ = Vocabulary.load(args.vocab_file)
 
     model = FastQA(len(token_to_index), args.embed, args.hidden,
                    question_limit=args.q_len, context_limit=args.c_len).build()
     model.load_weights(args.model_path)
 
-    metric = SquadMetric()
     test_dataset = SquadReader(args.test_path)
     tokenizer = get_tokenizer(lower=args.lower, as_str=False)
-    converter = SquadTestConverter(token_to_index, PAD_TOKEN, UNK_TOKEN, tokenizer,
+    converter = SquadEvalConverter(token_to_index, PAD_TOKEN, UNK_TOKEN, tokenizer,
                                    question_max_len=args.q_len, context_max_len=args.c_len)
     test_generator = Iterator(test_dataset, args.batch, converter, False, False)
-    em_score, f1_score = evaluate(model, test_generator, metric, index_to_token)
-    print('EM: {}, F1: {}'.format(em_score, f1_score))
+    predictions = {}
+    for inputs, (contexts, ids) in test_generator:
+        _, _, start_indices, end_indices = model.predict_on_batch(inputs)
+
+        for i, (start, end) in enumerate(zip(start_indices, end_indices)):
+            prediction = ' '.join(contexts[i][j] for j in range(start, end + 1))
+            predictions[ids[i]] = prediction
+
+    basename = osp.splitext(osp.basename(args.model_path))[0]
+    save_path = osp.join(args.save_dir, f'predictions_{basename}.json')
+
+    with open(save_path, 'w') as f:
+        json.dump(predictions, f, indent=2)
 
 
 if __name__ == '__main__':
@@ -36,5 +46,6 @@ if __name__ == '__main__':
     parser.add_argument('--q-len', default=50, type=int)
     parser.add_argument('--c-len', default=650, type=int)
     parser.add_argument('--model-path', type=str)
+    parser.add_argument('--save-dir', type=str, default='.')
     args = parser.parse_args()
     main(args)
