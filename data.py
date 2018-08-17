@@ -109,7 +109,7 @@ class Iterator:
         if self._shuffle:
             self._order = np.random.permutation(len(self._dataset))
         else:
-            self._order = range(len(self._dataset))
+            self._order = list(range(len(self._dataset)))
 
     def __len__(self):
         return math.ceil(len(self._dataset) / self._batch_size)
