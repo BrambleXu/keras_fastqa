@@ -3,6 +3,7 @@ import csv
 import random
 import pickle
 import linecache
+import json
 
 from tqdm import tqdm
 import matplotlib
@@ -97,6 +98,28 @@ def make_small_dataset(filename, size=100, overwrite=False):
             line = linecache.getline(filename, i + 1)
             data = next(csv.reader([line], delimiter='\t'))
             writer.writerow(data)
+
+
+def make_answer_dataset(tsv_file, json_file):
+    with open(json_file) as f:
+        original_dataset = json.load(f)
+
+    with open(tsv_file) as f:
+        preprocessed_dataset_ids = [line[-1] for line in csv.reader(f, delimiter='\t')]
+
+    qas = []
+    for article in original_dataset['data']:
+        for paragraph in article['paragraphs']:
+            for qa in paragraph['qas']:
+                if qa['id'] in preprocessed_dataset_ids:
+                    qas.append(qa)
+    answer_dataset = {'data': [{'paragraphs': [{'qas': qas}]}],
+                      'version': original_dataset['version']}
+
+    basename, ext = os.path.splitext(tsv_file)
+    answer_dataset_file = f'{basename}.json'
+    with open(answer_dataset_file, 'w') as f:
+        json.dump(answer_dataset, f, indent=2)
 
 
 def split_dataset(filename, ratio=0.8, overwrite=False):
