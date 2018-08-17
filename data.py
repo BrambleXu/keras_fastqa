@@ -100,16 +100,16 @@ class Iterator:
         self._converter = converter
         self._repeat = repeat
         self._shuffle = shuffle
-        self._epoch = 0
 
         self.reset()
 
     def reset(self):
+        self._epoch = 0
         self._current_position = 0
         if self._shuffle:
             self._order = np.random.permutation(len(self._dataset))
         else:
-            self._order = None
+            self._order = list(range(len(self._dataset)))
 
     def __len__(self):
         return math.ceil(len(self._dataset) / self._batch_size)

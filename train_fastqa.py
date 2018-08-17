@@ -9,7 +9,8 @@ from keras.optimizers import Adam
 from keras.callbacks import TensorBoard
 
 from models import FastQA
-from data import SquadReader, Iterator, SquadConverter, Vocabulary, get_tokenizer
+from data import SquadReader, Iterator, SquadConverter, SquadEvalConverter, \
+    Vocabulary, get_tokenizer
 from trainer import SquadTrainer
 from callbacks import FastQALRScheduler, FastQACheckpoint
 from utils import dump_graph
@@ -36,11 +37,16 @@ def main(args):
     tokenizer = get_tokenizer(lower=args.lower, as_str=False)
     converter = SquadConverter(token_to_index, PAD_TOKEN, UNK_TOKEN, tokenizer,
                                question_max_len=args.q_len, context_max_len=args.c_len)
+    eval_converter = SquadEvalConverter(
+        token_to_index, PAD_TOKEN, UNK_TOKEN, tokenizer,
+        question_max_len=args.q_len, context_max_len=args.c_len)
     train_generator = Iterator(train_dataset, args.batch, converter)
-    dev_generator = Iterator(dev_dataset, args.batch, converter)
-    trainer = SquadTrainer(model, train_generator, args.epoch, dev_generator,
+    dev_generator_loss = Iterator(dev_dataset, args.batch, converter, shuffle=False)
+    dev_generator_f1 = Iterator(dev_dataset, args.batch, eval_converter, repeat=False, shuffle=False)
+    trainer = SquadTrainer(model, train_generator, args.epoch, dev_generator_loss,
                            './models/fastqa.{epoch:02d}-{val_loss:.2f}.h5')
-    trainer.add_callback(FastQALRScheduler(dev_generator, steps=args.steps))
+    trainer.add_callback(FastQALRScheduler(
+        dev_generator_f1, val_answer_file=args.answer_path, steps=args.steps))
     trainer.add_callback(FastQACheckpoint('./models/fastqa.{steps:06d}.h5', steps=args.steps))
     if args.use_tensorboard:
         trainer.add_callback(TensorBoard(log_dir='./graph', batch_size=args.batch))
@@ -60,6 +66,7 @@ if __name__ == '__main__':
     parser.add_argument('--steps', default=1000, type=int)
     parser.add_argument('--train-path', default='./data/train-v1.1_train.txt', type=str)
     parser.add_argument('--dev-path', default='./data/train-v1.1_dev.txt', type=str)
+    parser.add_argument('--answer-path', default='./data/train-v1.1_dev.json', type=str)
     parser.add_argument('--vocab-file', default='./data/vocab_question_context_min-freq10_max_size.pkl', type=str)
     parser.add_argument('--lower', default=False, action='store_true')
     parser.add_argument('--use-tensorboard', default=False, action='store_true')
