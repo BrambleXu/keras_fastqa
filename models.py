@@ -11,7 +11,7 @@ from initializers import init_lstm_projection
 class FastQA:
     def __init__(self, vocab_size, embed_size, hidden_size,
                  question_limit=50, context_limit=400, dropout=.5,
-                 pretrained_embeddings=None):
+                 pretrained_embeddings=None, with_feature=True):
         embeddings = None
         if pretrained_embeddings is not None:
             embeddings = [pretrained_embeddings]
@@ -30,6 +30,7 @@ class FastQA:
         self.embed_size = embed_size
         self.hidden_size = hidden_size
         self.dropout = dropout
+        self.with_feature = with_feature
 
     def build(self):
         q_input = Input((self.q_limit,))
@@ -44,12 +45,16 @@ class FastQA:
         # embedding
         Q_e = self.embed_layer(q_input)
         # feature
-        Q_wiq = Ones(2)([q_input, q_len])
+        if self.with_feature:
+            Q_wiq = Ones(2)([q_input, q_len])
         # embedding
         Q_h = self.highway(Q_e)
         Q_d = Dropout(self.dropout, (batch, 1, self.embed_size))(Q_h)
         # lstm input
-        Q_ = Concatenate()([Q_d, Q_wiq])
+        if self.with_feature:
+            Q_ = Concatenate()([Q_d, Q_wiq])
+        else:
+            Q_ = Q_d
         # bilstm
         Z = Concatenate()([self.lstm_f(Q_), self.lstm_b([Q_, q_len])])
         Z = Reshape((self.q_limit, self.hidden_size * 2))(Z)
@@ -60,13 +65,17 @@ class FastQA:
         # embedding
         X_e = self.embed_layer(c_input)
         # feature
-        X_wiqb = WordInQuestionB()([q_input, c_input, c_len])
-        X_wiqw = WordInQuestionW()([Q_e, X_e, q_len, c_len])
+        if self.with_feature:
+            X_wiqb = WordInQuestionB()([q_input, c_input, c_len])
+            X_wiqw = WordInQuestionW()([Q_e, X_e, q_len, c_len])
         # embedding
         X_h = self.highway(X_e)
         X_d = Dropout(self.dropout, (batch, 1, self.embed_size))(X_h)
         # lstm input
-        X_ = Concatenate()([X_d, X_wiqb, X_wiqw])
+        if self.with_feature:
+            X_ = Concatenate()([X_d, X_wiqb, X_wiqw])
+        else:
+            X_ = X_d
         # bilstm
         H = Concatenate()([self.lstm_f(X_), self.lstm_b([X_, c_len])])
         H = Reshape((self.c_limit, self.hidden_size * 2))(H)
