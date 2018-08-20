@@ -78,6 +78,10 @@ class WordInQuestionB(Lambda):
 
 
 class WordInQuestionW(Layer):
+    def __init__(self, reduce_sum=True, **kwargs):
+        self.reduce_sum = reduce_sum
+        super().__init__(**kwargs)
+
     def build(self, input_shape):
         self.weight = self.add_weight(name='kernel',
                                       shape=(input_shape[0][-1], 1),
@@ -95,11 +99,16 @@ class WordInQuestionW(Layer):
             context_len, maxlen=context.shape.as_list()[1], dtype=tf.float32), axis=2)
         mask = tf.matmul(context_mask, question_mask)
         similarity = similarity + tf.float32.min * (1 - mask)
-        return tf.expand_dims(tf.reduce_sum(tf.nn.softmax(similarity, axis=1) * mask, axis=2), axis=-1)
+        wiq_w = tf.nn.softmax(similarity, axis=1) * mask
+        if self.reduce_sum:
+            return tf.reduce_sum(wiq_w, axis=2, keepdims=True)
+        else:
+            return wiq_w
 
     def compute_output_shape(self, input_shape):
-        batch, seq_len, d = input_shape[1]
-        return (batch, seq_len, 1)
+        batch, c_len, d = input_shape[1]
+        _, q_len, _ = input_shape[0]
+        return (batch, c_len, 1 if self.reduce_sum else q_len)
 
 
 class Highway(Layer):
