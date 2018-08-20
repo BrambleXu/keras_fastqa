@@ -36,7 +36,7 @@ class WIQLayerTest(TestCase):
         q_len = SequenceLength()(q_input)
         c_len = SequenceLength()(c_input)
         embed = Embedding(7, 7, embeddings_initializer='identity')
-        output = WordInQuestionW()([embed(q_input), embed(c_input), q_len, c_len])
+        output = WordInQuestionW(True)([embed(q_input), embed(c_input), q_len, c_len])
         model = Model([q_input, c_input], output)
 
         # assertion
