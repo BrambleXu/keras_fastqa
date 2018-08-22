@@ -54,3 +54,12 @@ trainer.run()
 ```sh
 $ git clone https://github.com/yasufumy/keras_fastqa.git
 ```
+
+## Results
+
+Model|F1|Exact Match
+:-|:-:|:-:
+BiLSTM / reported | 58.2 | 48.7
+BiLSTM / ours | 51.0 | 41.0
+FastQA\* / reported | 74.9 | 65.5
+FastQA\* / ours | 69.5 | 58.5
