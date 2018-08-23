@@ -3,7 +3,7 @@ import csv
 import math
 import linecache
 from collections import Counter
-from itertools import takewhile
+from itertools import takewhile, chain
 
 import numpy as np
 import spacy
@@ -41,17 +41,21 @@ def get_tokenizer(lower=False, as_str=False):
     return tokenizer
 
 
-def load_squad_tokens(filename, tokenizer, indices=[0, 1]):
-    with open(filename) as f:
-        data = [row for row in csv.reader(f, delimiter='\t')]
-    data = [[tokenizer(x[i]) for i in indices] for x in data]
-    results = list(zip(*data))
-    if len(results) == 1:
-        sequence = results[0]
-    elif len(results) == 2:
-        sequence = results[0] + results[1]
-    tokens = (token for tokens in sequence for token in tokens)
-    return tokens
+def load_squad_tokens(filenames, tokenizer, indices=[0, 1]):
+    if type(filenames) is str:
+        filenames = [filenames]
+    total_tokens = []
+    for filename in filenames:
+        with open(filename) as f:
+            data = [row for row in csv.reader(f, delimiter='\t')]
+        data = [[tokenizer(x[i]) for i in indices] for x in data]
+        results = list(zip(*data))
+        if len(results) == 1:
+            sequence = results[0]
+        elif len(results) == 2:
+            sequence = results[0] + results[1]
+        total_tokens.append((token for tokens in sequence for token in tokens))
+    return chain(*total_tokens)
 
 
 class Vocabulary:
