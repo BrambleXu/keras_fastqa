@@ -26,7 +26,8 @@ def main(args):
     max_size = args.max_size if args.max_size else ''
     filename = f'{basename}_{desc}_min-freq{min_freq}_max_size{max_size}{ext}'
 
-    squad_tokens = load_squad_tokens(args.train_path, tokenizer, indices=indices)
+    squad_tokens = load_squad_tokens([args.train_path, args.dev_path],
+                                     tokenizer, indices=indices)
     Vocabulary.build(squad_tokens, args.min_freq, args.max_size, (PAD_TOKEN, UNK_TOKEN), filename)
 
 
@@ -34,6 +35,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--vocab-path', default='./data/vocab.pkl', type=str)
     parser.add_argument('--train-path', default='./data/train-v1.1.txt', type=str)
+    parser.add_argument('--dev-path', default='./data/dev-v1.1.txt', type=str)
     parser.add_argument('--min-freq', default=10, type=int)
     parser.add_argument('--max-size', default=None, type=int)
     parser.add_argument('--only-question', default=False, action='store_true')
